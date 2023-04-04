@@ -17,7 +17,7 @@
 //
 
 import Cocoa
-import SwiftMatrixSDK
+import MatrixSDK
 
 class AvatarImageView: ContextImageView {
     
@@ -69,12 +69,14 @@ class AvatarImageView: ContextImageView {
         guard mxcUrl != nil else { return }
         
         if mxcUrl!.hasPrefix("mxc://") {
-            url = MatrixServices.inst.client.url(ofContentThumbnail: forMxcUrl, toFitViewSize: CGSize(width: 96, height: 96), with: MXThumbnailingMethodScale)
+            url = MatrixServices.inst.session.mediaManager.url(ofContentThumbnail: forMxcUrl, toFitViewSize: CGSize(width: 96, height: 96), with: MXThumbnailingMethodScale)
+            // url = MatrixServices.inst.client.url(ofContentThumbnail: forMxcUrl, toFitViewSize: CGSize(width: 96, height: 96), with: MXThumbnailingMethodScale)
+            url = nil
             guard url != nil else { return }
             
             if url!.hasPrefix("http://") || url!.hasPrefix("https://") {
-                guard let path = MXMediaManager.cachePathForMedia(withURL: url, andType: nil, inFolder: kMXMediaManagerAvatarThumbnailFolder) else { return }
-                
+                guard let path = MXMediaManager.cachePath(forMatrixContentURI: url, andType: nil, inFolder: kMXMediaManagerAvatarThumbnailFolder) else { return }
+                // guard let path = MXMediaManager.cachePathForMedia(withURL: url, andType: nil, inFolder: kMXMediaManagerAvatarThumbnailFolder) else { return }
                 if FileManager.default.fileExists(atPath: path) && useCached {
                     { [weak self] in
                         if let image = MXMediaManager.loadThroughCache(withFilePath: path) {
@@ -88,8 +90,8 @@ class AvatarImageView: ContextImageView {
                 } else {
                     DispatchQueue.main.async {
                         let previousPath = path
-                        MXMediaManager.downloadMedia(fromURL: self.url!, andSaveAtFilePath: path, success: { [weak self] in
-                            if let image = MXMediaManager.loadThroughCache(withFilePath: path) {
+                        MatrixServices.inst.session.mediaManager.downloadMedia(fromMatrixContentURI: self.url!, withType: nil, inFolder: kMXMediaManagerAvatarThumbnailFolder, success: { [weak self] downloadPath in
+                            if let image = MXMediaManager.loadThroughCache(withFilePath: downloadPath) {
                                 guard previousPath == path else { return }
                                 self?.image = image
                                 if let cacheUrl = forMxcUrl {

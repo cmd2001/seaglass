@@ -17,7 +17,7 @@
 //
 
 import Cocoa
-import SwiftMatrixSDK
+import MatrixSDK
 
 class RoomsCacheEntry: NSObject {
     var room: MXRoom
@@ -26,16 +26,32 @@ class RoomsCacheEntry: NSObject {
         return room.roomId
     }
     @objc dynamic var roomName: String {
-        return room.state.name ?? ""
+        var name = ""
+        room.state { roomState in
+            name = roomState?.name ?? ""
+        }
+        return name
     }
     @objc dynamic var roomAlias: String {
-        return room.state.canonicalAlias ?? ""
+        var alias = ""
+        room.state { roomState in
+            alias = roomState?.canonicalAlias ?? ""
+        }
+        return alias
     }
-    @objc dynamic var roomTopic: String  {
-        return room.state.topic ?? ""
+    @objc dynamic var roomTopic: String {
+        var topic = ""
+        room.state { roomState in
+            topic = roomState?.topic ?? ""
+        }
+        return topic
     }
     @objc dynamic var roomAvatar: String {
-        return room.state.avatar ?? ""
+        var avatar = ""
+        room.state { roomState in
+            avatar = roomState?.avatar ?? ""
+        }
+        return avatar
     }
     @objc dynamic var roomSortWeight: Int {
         if isInvite() {
@@ -44,11 +60,11 @@ class RoomsCacheEntry: NSObject {
         if room.isDirect {
             return 70
         }
-        if room.summary.isEncrypted || room.state.isEncrypted {
+        if room.summary.isEncrypted || self.stateIsEncrypted {
             return 60
         }
-        if room.state.name == "" {
-            if room.state.topic == "" {
+        if self.roomName == "" {
+            if self.roomTopic == "" {
                 return 52
             }
             return 51
@@ -77,7 +93,19 @@ class RoomsCacheEntry: NSObject {
         return ""
     }
     var members: [MXRoomMember] {
-        return room.state.members
+        var members: [MXRoomMember] = []
+        room.state { roomState in
+            members = roomState?.members.members ?? []
+        }
+        return members
+    }
+
+    @objc dynamic var stateIsEncrypted: Bool {
+        var encrypted = false
+        room.state { roomState in
+            encrypted = roomState?.isEncrypted ?? false
+        }
+        return encrypted
     }
     
     init(_ room: MXRoom) {
@@ -86,7 +114,11 @@ class RoomsCacheEntry: NSObject {
     }
     
     func topic() -> String {
-        return room.state.topic
+        var topic = ""
+        room.state { roomState in
+            topic = roomState?.topic ?? ""
+        }
+        return topic
     }
     
     func unread() -> Bool {
@@ -109,7 +141,7 @@ class RoomsCacheEntry: NSObject {
     }
     
     func encrypted() -> Bool {
-        return room.summary.isEncrypted || room.state.isEncrypted
+        return room.summary.isEncrypted || self.stateIsEncrypted
     }
     
     func isInvite() -> Bool {

@@ -17,7 +17,7 @@
 //
 
 import Cocoa
-import SwiftMatrixSDK
+import MatrixSDK
 
 class MainViewRoomsController: NSViewController, MatrixRoomsDelegate, NSTableViewDelegate, NSTableViewDataSource {
 
@@ -145,28 +145,29 @@ class MainViewRoomsController: NSViewController, MatrixRoomsDelegate, NSTableVie
             cell?.RoomListEntryUnread.isHidden = false
         } else {
             switch AppDefaults.shared.showMostRecentMessageInSidebar {
-                case false:
-                    var memberString: String = ""
-                    var topicString: String = "No topic set"
-                    
-                    if state.roomTopic != "" {
-                        topicString = state.roomTopic
-                    }
-                    
-                    switch count {
-                        case 0: fallthrough
-                        case 1: memberString = "Empty room"; break
-                        case 2: memberString = "Direct chat"; break
-                        default: memberString = "\(count) members"
-                    }
-                    
-                    cell?.RoomListEntryTopic.stringValue = "\(memberString)\n\(topicString)"
-                    break
-                case true:
-                    let lastMessagePreview: String = state.room.summary.lastMessageEvent?.content["body"] as? String ?? ""
-                    cell?.RoomListEntryTopic.cell?.truncatesLastVisibleLine = true
-                    cell?.RoomListEntryTopic.stringValue = lastMessagePreview
-                    break
+            case false:
+                var memberString: String = ""
+                var topicString: String = "No topic set"
+                
+                if state.roomTopic != "" {
+                    topicString = state.roomTopic
+                }
+                
+                switch count {
+                case 0: fallthrough
+                case 1: memberString = "Empty room"; break
+                case 2: memberString = "Direct chat"; break
+                default: memberString = "\(count) members"
+                }
+                
+                cell?.RoomListEntryTopic.stringValue = "\(memberString)\n\(topicString)"
+                break
+            case true:
+                // let lastMessagePreview: String = state.room.summary.lastMessageEvent?.content["body"] as? String ?? ""
+                let lastMessagePreview = state.room.summary.lastMessage?.text ?? ""
+                cell?.RoomListEntryTopic.cell?.truncatesLastVisibleLine = true
+                cell?.RoomListEntryTopic.stringValue = lastMessagePreview
+                break
             }
             
             cell?.RoomListEntryUnread.image? = (cell?.RoomListEntryUnread.image?.tint(with: NSColor.blue))!
@@ -202,18 +203,18 @@ class MainViewRoomsController: NSViewController, MatrixRoomsDelegate, NSTableVie
     func updateAttentionRooms() {
         let roomsCache = roomsCacheController.arrangedObjects as! [RoomsCacheEntry]
         var count = roomsCache.filter({ $0.isInvite() }).count
-       /* for room in roomsCache {
-            count += room.highlights()
-        } */
+        /* for room in roomsCache {
+         count += room.highlights()
+         } */
         NSApp.dockTile.badgeLabel = count > 0 ? String(count) : ""
     }
     
     func tableView(_ tableView: NSTableView, didAdd rowView: NSTableRowView, forRow row: Int) {
-       // updateAttentionRooms()
+        // updateAttentionRooms()
     }
     
     func tableView(_ tableView: NSTableView, didRemove rowView: NSTableRowView, forRow row: Int) {
-       // updateAttentionRooms()
+        // updateAttentionRooms()
     }
     
     func tableView(_ tableView: NSTableView, rowActionsForRow row: Int, edge: NSTableView.RowActionEdge) -> [NSTableViewRowAction] {
@@ -237,7 +238,7 @@ class MainViewRoomsController: NSViewController, MatrixRoomsDelegate, NSTableVie
                         }
                     }
                 }
-            )]
+                                    )]
         } else {
             return []
         }

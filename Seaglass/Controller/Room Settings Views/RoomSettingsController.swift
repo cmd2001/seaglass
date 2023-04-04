@@ -17,7 +17,7 @@
 //
 
 import Cocoa
-import SwiftMatrixSDK
+import MatrixSDK
 
 class RoomSettingsController: NSViewController {
     @IBOutlet var ButtonSave: NSButton!
@@ -269,11 +269,17 @@ class RoomSettingsController: NSViewController {
             return
         }
         
-        RoomName.stringValue = room!.state.name ?? ""
+        RoomName.stringValue = ""
+        room!.state({ [self] roomState in
+            RoomName.stringValue = roomState!.name ?? ""
+        })
         RoomName.isEnabled = MatrixServices.inst.userHasPower(inRoomId: room!.roomId, forEvent: "m.room.name")
         RoomName.isEditable = true
         
-        RoomTopic.stringValue = room!.state.topic ?? ""
+        RoomTopic.stringValue = ""
+        room!.state({ [self] roomState in
+            RoomTopic.stringValue = roomState!.topic ?? ""
+        })
         RoomTopic.isEnabled = MatrixServices.inst.userHasPower(inRoomId: room!.roomId, forEvent: "m.room.topic")
         RoomTopic.isEditable = true
         
@@ -296,9 +302,11 @@ class RoomSettingsController: NSViewController {
             MatrixServices.inst.userHasPower(inRoomId: room!.roomId, forEvent: "m.room.guest_access") &&
             MatrixServices.inst.userHasPower(inRoomId: room!.roomId, forEvent: "m.room.join_rules")
         
-        RoomAccessOnlyInvited.state = !room!.state.isJoinRulePublic ? .on : .off
-        RoomAccessExceptGuests.state = room!.state.isJoinRulePublic && room!.state.guestAccess == .forbidden ? .on : .off
-        RoomAccessIncludingGuests.state = room!.state.isJoinRulePublic && room!.state.guestAccess == .canJoin ? .on : .off
+        room!.state({ [self] roomState in
+            RoomAccessOnlyInvited.state = !roomState!.isJoinRulePublic ? .on : .off
+            RoomAccessExceptGuests.state = roomState!.isJoinRulePublic && roomState!.guestAccess == .forbidden ? .on : .off
+            RoomAccessIncludingGuests.state = roomState!.isJoinRulePublic && roomState!.guestAccess == .canJoin ? .on : .off
+        })
         RoomAccessOnlyInvited.isEnabled = roomAccessEnabled
         RoomAccessExceptGuests.isEnabled = roomAccessEnabled
         RoomAccessIncludingGuests.isEnabled = roomAccessEnabled
@@ -309,10 +317,12 @@ class RoomSettingsController: NSViewController {
 
         let roomHistoryEnabled = MatrixServices.inst.userHasPower(inRoomId: room!.roomId, forEvent: "m.room.history_visibility")
         
-        RoomHistorySinceJoined.state = room!.state.historyVisibility == .joined ? .on : .off
-        RoomHistorySinceInvited.state = room!.state.historyVisibility == .invited ? .on : .off
-        RoomHistorySinceSelected.state = room!.state.historyVisibility == .shared ? .on : .off
-        RoomHistoryAnyone.state = room!.state.historyVisibility == .worldReadable ? .on : .off
+        room!.state({ [self] roomState in
+            RoomHistorySinceJoined.state = roomState!.historyVisibility == .joined ? .on : .off
+            RoomHistorySinceInvited.state = roomState!.historyVisibility == .invited ? .on : .off
+            RoomHistorySinceSelected.state = roomState!.historyVisibility == .shared ? .on : .off
+            RoomHistoryAnyone.state = roomState!.historyVisibility == .worldReadable ? .on : .off
+        })
         RoomHistorySinceJoined.isEnabled = roomHistoryEnabled
         RoomHistorySinceInvited.isEnabled = roomHistoryEnabled
         RoomHistorySinceSelected.isEnabled = roomHistoryEnabled

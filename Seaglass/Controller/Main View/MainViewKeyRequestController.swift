@@ -17,7 +17,7 @@
 //
 
 import Cocoa
-import SwiftMatrixSDK
+import MatrixSDK
 
 class MainViewKeyRequestController: NSViewController {
 
@@ -34,27 +34,28 @@ class MainViewKeyRequestController: NSViewController {
     override func viewWillAppear() {
         guard request != nil else { return }
         
-        if let storedDevice = MatrixServices.inst.session.crypto.deviceList.storedDevice(request!.userId, deviceId: request!.deviceId) {
-
-            if let edkey = storedDevice.fingerprint {
-                DeviceKeyField.stringValue = String(edkey.enumerated().map { $0 > 0 && $0 % 4 == 0 ? [" ", $1] : [$1]}.joined())
-            }
-            
-            DeviceNameField.stringValue = storedDevice.displayName ?? ""
-            
-            UserIDField.stringValue = request!.userId
-            DeviceIDField.stringValue = request!.deviceId
-            
-            ConfirmationCheckbox.state = .off
-        } else {
-            let alert = NSAlert()
-            alert.messageText = "Incoming keyshare request failed"
-            alert.informativeText = "The device information was not available."
-            alert.alertStyle = .warning
-            alert.addButton(withTitle: "OK")
-            alert.runModal()
-            self.dismiss(self)
-        }
+        // TODO: handle DeviceList
+//        if let storedDevice = MatrixServices.inst.session.crypto.deviceList.storedDevice(request!.userId, deviceId: request!.deviceId) {
+//
+//            if let edkey = storedDevice.fingerprint {
+//                DeviceKeyField.stringValue = String(edkey.enumerated().map { $0 > 0 && $0 % 4 == 0 ? [" ", $1] : [$1]}.joined())
+//            }
+//            
+//            DeviceNameField.stringValue = storedDevice.displayName ?? ""
+//            
+//            UserIDField.stringValue = request!.userId
+//            DeviceIDField.stringValue = request!.deviceId
+//            
+//            ConfirmationCheckbox.state = .off
+//        } else {
+//            let alert = NSAlert()
+//            alert.messageText = "Incoming keyshare request failed"
+//            alert.informativeText = "The device information was not available."
+//            alert.alertStyle = .warning
+//            alert.addButton(withTitle: "OK")
+//            alert.runModal()
+//            self.dismiss(self)
+//        }
     }
 
     @IBAction func shareButtonPressed(_ sender: NSButton) {
@@ -63,7 +64,7 @@ class MainViewKeyRequestController: NSViewController {
         guard ConfirmationCheckbox.state == .on else { return }
         
         MatrixServices.inst.session.crypto.acceptAllPendingKeyRequests(fromUser: request!.userId, andDevice: request!.deviceId) {
-            MatrixServices.inst.session.crypto.setDeviceVerification(MXDeviceVerified, forDevice: self.self.request!.deviceId, ofUser: self.request!.userId, success: {
+            MatrixServices.inst.session.crypto.setDeviceVerification(MXDeviceVerification.verified, forDevice: self.self.request!.deviceId, ofUser: self.request!.userId, success: {
                 MatrixServices.inst.mainController?.channelDelegate?.uiRoomNeedsCryptoReload()
             }, failure: { (error) in
                 let alert = NSAlert()

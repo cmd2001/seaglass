@@ -17,7 +17,7 @@
 //
 
 import Cocoa
-import SwiftMatrixSDK
+import MatrixSDK
 
 class RoomMessage: NSTableCellView {
     var event: MXEvent?
@@ -37,8 +37,8 @@ class RoomMessage: NSTableCellView {
     
     func encryptionIsBlacklisted() -> Bool {
         guard event != nil && event!.isEncrypted else { return false }
-        if let deviceInfo = MatrixServices.inst.session.crypto.eventSenderDevice(of: event) {
-            return deviceInfo.verified == MXDeviceBlocked
+        if let deviceInfo = MatrixServices.inst.session.crypto.eventDeviceInfo(event) {
+            return deviceInfo.trustLevel.localVerificationStatus == MXDeviceVerification.blocked
         }
         return false
     }
@@ -55,8 +55,8 @@ class RoomMessage: NSTableCellView {
     
     func encryptionIsVerified() -> Bool {
         guard event != nil else { return false }
-        if let deviceInfo = MatrixServices.inst.session.crypto.eventSenderDevice(of: event!) {
-            return self.encryptionIsEncrypted() && deviceInfo.verified == MXDeviceVerified
+        if let deviceInfo = MatrixServices.inst.session.crypto.eventDeviceInfo(event) {
+            return deviceInfo.trustLevel.localVerificationStatus == MXDeviceVerification.verified
         } else {
             return false
         }
@@ -90,7 +90,12 @@ class RoomMessage: NSTableCellView {
             return ""
         }
         if let room = MatrixServices.inst.session.room(withRoomId: event!.roomId) {
-            return room.state.memberName(event!.sender) ?? event!.sender as String
+//            return room.state.memberName(event!.sender) ?? event!.sender as String
+            var sender = ""
+            room.state { [self] roomState in
+                sender = roomState?.members.memberName(event!.sender) ?? event!.sender as String
+            }
+            return sender
         }
         return ""
     }

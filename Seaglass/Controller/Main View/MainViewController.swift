@@ -17,7 +17,7 @@
 //
 
 import Cocoa
-import SwiftMatrixSDK
+import MatrixSDK
 
 class MainViewController: NSSplitViewController, MatrixServicesDelegate {
     
@@ -81,17 +81,18 @@ class MainViewController: NSSplitViewController, MatrixServicesDelegate {
         guard (request.requestBody["sender_key"] as? String) != nil else { return }
         guard !keyRequests.contains(where: { $0.request!.deviceId == request.deviceId }) else { return }
         
-        MatrixServices.inst.session.crypto.deviceList.downloadKeys([request.userId], forceDownload: false, success: { (devicemap) in
-            if MatrixServices.inst.session.crypto.deviceList.storedDevice(request.userId, deviceId: request.deviceId) != nil {
-                DispatchQueue.main.async {
-                    let sheet = self.storyboard?.instantiateController(withIdentifier: "KeyRequest") as! MainViewKeyRequestController
-                    sheet.request = request
-                    self.presentAsSheet(sheet)
-                    self.keyRequests.append(sheet)
-                }
-            }
-        }) { (error) in
-        }
+        // TODO: handle DeviceList
+//        MatrixServices.inst.session.crypto.downloadKeys([request.userId], forceDownload: false, success: { (devicemap, crossSigningInfo) in
+//            if MatrixServices.inst.session.crypto.deviceList.storedDevice(request.userId, deviceId: request.deviceId) != nil {
+//                DispatchQueue.main.async {
+//                    let sheet = self.storyboard?.instantiateController(withIdentifier: "KeyRequest") as! MainViewKeyRequestController
+//                    sheet.request = request
+//                    self.presentAsSheet(sheet)
+//                    self.keyRequests.append(sheet)
+//                }
+//            }
+//        }) { (error) in
+//        }
     }
     
     func matrixDidReceiveKeyRequestCancellation(_ cancellation: MXIncomingRoomKeyRequestCancellation) {

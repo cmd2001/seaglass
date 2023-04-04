@@ -17,7 +17,7 @@
 //
 
 import Cocoa
-import SwiftMatrixSDK
+import MatrixSDK
 
 class RoomMessageInline: RoomMessage {
     @IBOutlet var Text: NSTextField!
@@ -64,7 +64,11 @@ class RoomMessageInline: RoomMessage {
                 changes = ["membership"]
             }
             
-            let senderDisplayName = room.state.memberName(event.sender) ?? event.sender as String
+           //  let senderDisplayName = room.state.memberName(event.sender) ?? event.sender as String
+            var senderDisplayName = event.sender as String
+            room.state({roomState in
+                senderDisplayName = roomState?.members.memberName(event.sender) ?? event.sender as String
+            })
             let prevDisplayName =
                 event.prevContent != nil && event.prevContent.keys.contains("displayname") ?
                     event.prevContent["displayname"] as! String? :
@@ -145,11 +149,17 @@ class RoomMessageInline: RoomMessage {
             break
         case "m.room.create":
             guard let roomCreator = event.content["creator"] as? String else { break }
-            let displayName = MatrixServices.inst.session.room(withRoomId: roomId).state.memberName(roomCreator) ?? roomCreator
+            var displayName = roomCreator
+            MatrixServices.inst.session.room(withRoomId: roomId).state({roomState in
+                displayName = roomState?.members.memberName(roomCreator) ?? roomCreator
+            })
             Text.stringValue = "Room created by \(displayName)"
             break
         case "m.room.encryption":
-            let displayName = MatrixServices.inst.session.room(withRoomId: roomId).state.memberName(event.sender) ?? event.sender ?? "Room participant"
+            var displayName = event.sender ?? "Room participant"
+            MatrixServices.inst.session.room(withRoomId: roomId).state({roomState in
+                displayName = roomState?.members.memberName(event.sender) ?? event.sender ?? "Room participant"
+            })
             Text.stringValue = "\(displayName) enabled room encryption (\(event.content["algorithm"] ?? "unknown") algorithm)"
             break
         default:

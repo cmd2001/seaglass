@@ -17,7 +17,7 @@
 //
 
 import Cocoa
-import SwiftMatrixSDK
+import MatrixSDK
 
 class MemberListController: NSViewController, NSTableViewDelegate, NSTableViewDataSource {
     @IBOutlet var membersCacheController: NSArrayController!
@@ -33,9 +33,11 @@ class MemberListController: NSViewController, NSTableViewDelegate, NSTableViewDa
             return
         }
         
-        for member in MatrixServices.inst.session.room(withRoomId: roomId).state.members {
-            membersCacheController.insert(MembersCacheEntry(member), atArrangedObjectIndex: 0)
-        }
+        MatrixServices.inst.session.room(withRoomId: roomId).state({ [self] roomState in
+            for member in roomState!.members.members {
+                membersCacheController.insert(MembersCacheEntry(member), atArrangedObjectIndex: 0)
+            }
+        })
         
         let membercount = (membersCacheController.arrangedObjects as! [MXRoomMember]).count
         
@@ -56,9 +58,10 @@ class MemberListController: NSViewController, NSTableViewDelegate, NSTableViewDa
         let room = MatrixServices.inst.session.room(withRoomId: roomId)
         let member: MembersCacheEntry = (membersCacheController.arrangedObjects as! [MembersCacheEntry])[row]
         var powerlevel = 0
-        if room?.state.powerLevels != nil {
-            powerlevel = room?.state.powerLevels.powerLevelOfUser(withUserID: member.userId) ?? 0
-        }
+        
+        room?.state({roomState in
+            powerlevel = roomState?.powerLevels.powerLevelOfUser(withUserID: member.userId) ?? 0
+        })
         
         let cell = tableView.makeView(withIdentifier: NSUserInterfaceItemIdentifier(rawValue: "MemberListEntry"), owner: self) as? MemberListEntry
  

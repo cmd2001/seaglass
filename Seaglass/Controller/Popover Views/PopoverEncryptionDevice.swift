@@ -17,7 +17,7 @@
 //
 
 import Cocoa
-import SwiftMatrixSDK
+import MatrixSDK
 
 class PopoverEncryptionDevice: NSViewController {
 
@@ -47,7 +47,7 @@ class PopoverEncryptionDevice: NSViewController {
         
         if let deviceInfo = MatrixServices.inst.session.crypto.eventDeviceInfo(self.event) {
             if MatrixServices.inst.client.credentials.deviceId == deviceInfo.deviceId {
-                MatrixServices.inst.client.device(withId: MatrixServices.inst.client.credentials.deviceId, completion: { (response) in
+                MatrixServices.inst.client.device(withId: MatrixServices.inst.client.credentials.deviceId!, completion: { (response) in
                     if response.isSuccess {
                         if let device = response.value {
                             self.DeviceName.stringValue = device.displayName ?? ""
@@ -67,8 +67,8 @@ class PopoverEncryptionDevice: NSViewController {
                 DeviceBlacklisted.isEnabled = DeviceVerified.isEnabled
             }
 
-            DeviceVerified.state = deviceInfo.verified == MXDeviceVerified ? .on : .off
-            DeviceBlacklisted.state = deviceInfo.verified == MXDeviceBlocked ? .on : .off
+            DeviceVerified.state = deviceInfo.trustLevel.localVerificationStatus == MXDeviceVerification.verified ? .on : .off
+            DeviceBlacklisted.state = deviceInfo.trustLevel.localVerificationStatus == MXDeviceVerification.blocked ? .on : .off
         } else {
             DeviceVerified.isEnabled = false
             DeviceBlacklisted.isEnabled = false
@@ -76,7 +76,7 @@ class PopoverEncryptionDevice: NSViewController {
             DownloadSpinner.isHidden = false
             DownloadSpinner.startAnimation(self)
             
-            MatrixServices.inst.session.crypto.downloadKeys([event!.sender], forceDownload: false, success: { (devicemap) in
+            MatrixServices.inst.session.crypto.downloadKeys([event!.sender], forceDownload: false, success: { (devicemap, crossSigningInfo) in
                 self.DownloadSpinner.stopAnimation(self)
                 self.DownloadSpinner.isHidden = true
 
@@ -98,7 +98,7 @@ class PopoverEncryptionDevice: NSViewController {
         guard sender == DeviceVerified || sender == DeviceBlacklisted else { return }
         guard event != nil else { return }
         
-        if let deviceInfo = MatrixServices.inst.session.crypto.eventSenderDevice(of: event) {
+        if let deviceInfo = MatrixServices.inst.session.crypto.eventDeviceInfo(event) {
             if sender == DeviceVerified {
                 if DeviceVerified.state == .on {
                     DeviceBlacklisted.state = .off
@@ -112,8 +112,8 @@ class PopoverEncryptionDevice: NSViewController {
             }
             
             let verificationState =
-                DeviceBlacklisted.state == .on ? MXDeviceBlocked :
-                DeviceVerified.state == .on ? MXDeviceVerified : MXDeviceUnverified
+            DeviceBlacklisted.state == .on ? MXDeviceVerification.blocked :
+            DeviceVerified.state == .on ? MXDeviceVerification.verified : MXDeviceVerification.unverified
             
             DeviceVerified.isEnabled = false
             DeviceBlacklisted.isEnabled = false
@@ -124,8 +124,8 @@ class PopoverEncryptionDevice: NSViewController {
                 
                 MatrixServices.inst.mainController?.channelDelegate?.uiRoomNeedsCryptoReload()
             }) { (error) in
-                self.DeviceVerified.state = deviceInfo.verified == MXDeviceVerified ? .on : .off
-                self.DeviceBlacklisted.state = deviceInfo.verified == MXDeviceBlocked ? .on : .off
+                self.DeviceVerified.state = deviceInfo.trustLevel.localVerificationStatus == MXDeviceVerification.verified ? .on : .off
+                self.DeviceBlacklisted.state = deviceInfo.trustLevel.localVerificationStatus == MXDeviceVerification.blocked ? .on : .off
                 
                 self.DeviceVerified.isEnabled = true
                 self.DeviceBlacklisted.isEnabled = true

@@ -17,7 +17,7 @@
 //
 
 import Cocoa
-import SwiftMatrixSDK
+import MatrixSDK
 import Quartz
 
 class InlineImageView: ContextImageView, QLPreviewItem, QLPreviewPanelDelegate, QLPreviewPanelDataSource {
@@ -46,32 +46,33 @@ class InlineImageView: ContextImageView, QLPreviewItem, QLPreviewPanelDelegate, 
             constraint.constant = 16
         }
         self.handler = nil
-        self.setNeedsDisplay()
+        // self.setNeedsDisplay()
+        self.needsDisplay = true
     }
     
     func setImage(forMxcUrl: String?, withMimeType: String?, useCached: Bool = true, enableQuickLook: Bool = true) {
         guard let mxcURL = forMxcUrl else { return }
         
         if mxcURL.hasPrefix("mxc://") {
-            guard let url = MatrixServices.inst.client.url(ofContentThumbnail: forMxcUrl, toFitViewSize: CGSize(width: 256, height: 256), with: MXThumbnailingMethodScale) else { return }
-            guard let realurl = MatrixServices.inst.client.url(ofContent: forMxcUrl) else { return }
+            guard let url = MatrixServices.inst.session.mediaManager.url(ofContentThumbnail: forMxcUrl, toFitViewSize: CGSize(width: 256, height: 256), with: MXThumbnailingMethodScale) else { return }
+            guard let realurl = MatrixServices.inst.session.mediaManager.url(ofContent: forMxcUrl) else { return }
             
             if url.hasPrefix("http://") || url.hasPrefix("https://") {
-                guard let path = MXMediaManager.cachePathForMedia(withURL: url, andType: withMimeType, inFolder: kMXMediaManagerDefaultCacheFolder) else { return }
+                guard let path = MXMediaManager.cachePath(forMatrixContentURI: url, andType: withMimeType, inFolder: kMXMediaManagerDefaultCacheFolder) else { return }
       
                 if enableQuickLook {
                     self.handler = { (sender, roomId, eventId, userId) in
-                        guard let realpath = MXMediaManager.cachePathForMedia(withURL: realurl, andType: withMimeType, inFolder: kMXMediaManagerDefaultCacheFolder) else { return }
+                        guard let realpath = MXMediaManager.cachePath(forMatrixContentURI: realurl, andType: withMimeType, inFolder: kMXMediaManagerDefaultCacheFolder) else { return }
                         if !FileManager.default.fileExists(atPath: realpath) || !useCached {
-                            MXMediaManager.downloadMedia(fromURL: realurl, andSaveAtFilePath: realpath, success: { [weak self] in
-                                self?.previewItemURL = URL(fileURLWithPath: realpath)
+                            MatrixServices.inst.session.mediaManager.downloadMedia(fromMatrixContentURI: realurl, withType: withMimeType, inFolder: kMXMediaManagerDefaultCacheFolder, success: { [weak self] downloadPath in
+                                self?.previewItemURL = URL(fileURLWithPath: downloadPath!)
                                 if self?.previewItemURL.isFileURL ?? false {
                                     QLPreviewPanel.shared().delegate = self
                                     QLPreviewPanel.shared().dataSource = self
                                     QLPreviewPanel.shared().makeKeyAndOrderFront(self)
                                 }
                             }, failure: {[weak self] (error) in
-                                self?.previewItemURL = URL(fileURLWithPath: path)
+                                self?.previewItemURL = URL(fileURLWithPath: realpath)
                                 if self?.previewItemURL.isFileURL ?? false {
                                     QLPreviewPanel.shared().delegate = self
                                     QLPreviewPanel.shared().dataSource = self
@@ -97,27 +98,28 @@ class InlineImageView: ContextImageView, QLPreviewItem, QLPreviewPanelDelegate, 
                             self?.image = image
                             var width = self?.image?.size.width
                             var height = self?.image?.size.height
-                            if width! > maxDimensionWidth {
-                                let factor = 1 / width! * maxDimensionWidth
-                                width = maxDimensionWidth
+                            if width! > self!.maxDimensionWidth {
+                                let factor = 1 / width! * self!.maxDimensionWidth
+                                width = self!.maxDimensionWidth
                                 height = height! * factor
                             }
-                            if height! > maxDimensionHeight {
-                                let factor = 1 / height! * maxDimensionHeight
-                                height = maxDimensionHeight
+                            if height! > self!.maxDimensionHeight {
+                                let factor = 1 / height! * self!.maxDimensionHeight
+                                height = self!.maxDimensionHeight
                                 width = width! * factor
                             }
                             if let constraint = self?.constraints.first(where: { $0.identifier! == "height" }) {
                                 constraint.constant = height!
                             }
-                            self?.setNeedsDisplay()
+                            // self?.setNeedsDisplay()
+                            self?.needsDisplay = true
                         }
                     }()
                 } else {
                     DispatchQueue.main.async {
                         let previousPath = path
-                        MXMediaManager.downloadMedia(fromURL: url, andSaveAtFilePath: path, success: { [weak self] in
-                            if let image = MXMediaManager.loadThroughCache(withFilePath: path) {
+                        MatrixServices.inst.session.mediaManager.downloadMedia(fromMatrixContentURI: url, withType: withMimeType, inFolder: kMXMediaManagerDefaultCacheFolder, success: { [weak self] downloadPath in
+                            if let image = MXMediaManager.loadThroughCache(withFilePath: downloadPath) {
                                 guard previousPath == path else { return }
                                 self?.image = image
                                 var width = self?.image?.size.width ?? 128
@@ -135,7 +137,8 @@ class InlineImageView: ContextImageView, QLPreviewItem, QLPreviewPanelDelegate, 
                                 if let constraint = self?.constraints.first(where: { $0.identifier! == "height" }) {
                                     constraint.constant = height
                                 }
-                                self?.setNeedsDisplay()
+                                // self?.setNeedsDisplay()
+                                self?.needsDisplay = true
                             }
                         }) { [weak self] (error) in
                             guard previousPath == path else { return }

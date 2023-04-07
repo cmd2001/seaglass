@@ -23,10 +23,10 @@ class AvatarImageView: ContextImageView {
     
     var mxcUrl: String?
     var url: String?
-
+    
     required init?(coder: NSCoder) {
         super.init(coder: coder)
-
+        
         if layer == nil {
             layer = CALayer()
         }
@@ -55,6 +55,7 @@ class AvatarImageView: ContextImageView {
     }
     
     func setAvatar(forMxcUrl: String?, defaultImage: NSImage, useCached: Bool = true) {
+        NSLog("Setting avatar for \(String(describing: forMxcUrl))")
         guard mxcUrl != forMxcUrl else { return }
         if let cacheUrl = forMxcUrl {
             if useCached && MatrixServices.inst.avatarCache.keys.contains(cacheUrl) {
@@ -69,41 +70,35 @@ class AvatarImageView: ContextImageView {
         guard mxcUrl != nil else { return }
         
         if mxcUrl!.hasPrefix("mxc://") {
-            url = MatrixServices.inst.session.mediaManager.url(ofContentThumbnail: forMxcUrl, toFitViewSize: CGSize(width: 96, height: 96), with: MXThumbnailingMethodScale)
-            // url = MatrixServices.inst.client.url(ofContentThumbnail: forMxcUrl, toFitViewSize: CGSize(width: 96, height: 96), with: MXThumbnailingMethodScale)
-            url = nil
-            guard url != nil else { return }
-            
-            if url!.hasPrefix("http://") || url!.hasPrefix("https://") {
-                guard let path = MXMediaManager.cachePath(forMatrixContentURI: url, andType: nil, inFolder: kMXMediaManagerAvatarThumbnailFolder) else { return }
-                // guard let path = MXMediaManager.cachePathForMedia(withURL: url, andType: nil, inFolder: kMXMediaManagerAvatarThumbnailFolder) else { return }
-                if FileManager.default.fileExists(atPath: path) && useCached {
-                    { [weak self] in
-                        if let image = MXMediaManager.loadThroughCache(withFilePath: path) {
+            url = mxcUrl
+            // TODO: avatar thumbnail size
+            guard let path = MXMediaManager.cachePath(forMatrixContentURI: url, andType: nil, inFolder: kMXMediaManagerAvatarThumbnailFolder) else { return }
+            if FileManager.default.fileExists(atPath: path) && useCached {
+                { [weak self] in
+                    if let image = MXMediaManager.loadThroughCache(withFilePath: path) {
+                        self?.image = image
+                        self?.layout()
+                        if let cacheUrl = forMxcUrl {
+                            MatrixServices.inst.avatarCache[cacheUrl] = image
+                        }
+                    }
+                }()
+            } else {
+                DispatchQueue.main.async {
+                    let previousPath = path
+                    MatrixServices.inst.session.mediaManager.downloadMedia(fromMatrixContentURI: self.url!, withType: nil, inFolder: kMXMediaManagerAvatarThumbnailFolder, success: { [weak self] downloadPath in
+                        if let image = MXMediaManager.loadThroughCache(withFilePath: downloadPath) {
+                            guard previousPath == path else { return }
                             self?.image = image
-                            self?.layout()
                             if let cacheUrl = forMxcUrl {
                                 MatrixServices.inst.avatarCache[cacheUrl] = image
                             }
-                        }
-                    }()
-                } else {
-                    DispatchQueue.main.async {
-                        let previousPath = path
-                        MatrixServices.inst.session.mediaManager.downloadMedia(fromMatrixContentURI: self.url!, withType: nil, inFolder: kMXMediaManagerAvatarThumbnailFolder, success: { [weak self] downloadPath in
-                            if let image = MXMediaManager.loadThroughCache(withFilePath: downloadPath) {
-                                guard previousPath == path else { return }
-                                self?.image = image
-                                if let cacheUrl = forMxcUrl {
-                                    MatrixServices.inst.avatarCache[cacheUrl] = image
-                                }
-                                self?.layout()
-                            }
-                        }) { [weak self] (error) in
-                            guard previousPath == path else { return }
-                            self?.image = defaultImage
                             self?.layout()
                         }
+                    }) { [weak self] (error) in
+                        guard previousPath == path else { return }
+                        self?.image = defaultImage
+                        self?.layout()
                     }
                 }
             }
@@ -115,12 +110,15 @@ class AvatarImageView: ContextImageView {
             setAvatar(forText: "?")
             return
         }
-        
-        if user.avatarUrl != "" {
-            setAvatar(forMxcUrl: user.avatarUrl, defaultImage: NSImage.create(withLetterString: user.displayname ?? "?"), useCached: useCached)
-        } else {
-            setAvatar(forText: user.displayname)
-        }
+        MatrixServices.inst.session.matrixRestClient.avatarUrl(forUser: userId, completion: {
+            [self] url in
+            let userAvatarMxcUrl = url.value?.absoluteString ?? ""
+            if userAvatarMxcUrl != "" {
+                setAvatar(forMxcUrl: userAvatarMxcUrl, defaultImage: NSImage.create(withLetterString: user.displayname ?? "?"), useCached: useCached)
+            } else {
+                setAvatar(forText: user.displayname)
+            }
+        })
     }
     
     func setAvatar(forRoomId roomId: String, useCached: Bool = true) {

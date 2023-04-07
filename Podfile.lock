@@ -16,24 +16,23 @@ PODS:
   - GZIP (1.3.0)
   - LetsMove (1.24)
   - libbase58 (0.1.4)
-  - MatrixSDK (0.23.19):
-    - MatrixSDK/Core (= 0.23.19)
-  - MatrixSDK/Core (0.23.19):
+  - MatrixSDK (0.23.2):
+    - MatrixSDK/Core (= 0.23.2)
+  - MatrixSDK/Core (0.23.2):
     - AFNetworking (~> 4.0.0)
     - GZIP (~> 1.3.0)
     - libbase58 (~> 0.1.4)
-    - MatrixSDK/CryptoSDK
     - OLMKit (~> 3.2.5)
-    - Realm (= 10.27.0)
+    - Realm (= 10.16.0)
     - SwiftyBeaver (= 1.9.5)
   - OLMKit (3.2.12):
     - OLMKit/olmc (= 3.2.12)
     - OLMKit/olmcpp (= 3.2.12)
   - OLMKit/olmc (3.2.12)
   - OLMKit/olmcpp (3.2.12)
-  - Realm (10.27.0):
-    - Realm/Headers (= 10.27.0)
-  - Realm/Headers (10.27.0)
+  - Realm (10.16.0):
+    - Realm/Headers (= 10.16.0)
+  - Realm/Headers (10.16.0)
   - Sparkle (1.20.0)
   - SwiftyBeaver (1.9.5)
   - TSMarkdownParser (2.1.5)
@@ -65,13 +64,13 @@ SPEC CHECKSUMS:
   GZIP: 416858efbe66b41b206895ac6dfd5493200d95b3
   LetsMove: fefe56bc7bc7fb7d37049e28a14f297961229fc5
   libbase58: 7c040313537b8c44b6e2d15586af8e21f7354efd
-  MatrixSDK: a60a00635006c539dce654253e8f0544ea996111
+  MatrixSDK: ab6cbb1e8c437eac4f999be516b5e76c2bca9f6a
   OLMKit: da115f16582e47626616874e20f7bb92222c7a51
-  Realm: 9ca328bd7e700cc19703799785e37f77d1a130f2
+  Realm: b6027801398f3743fc222f096faa85281b506e6c
   Sparkle: 48999e7ee032f05ca05e28451eadf4af8ede6b44
   SwiftyBeaver: 84069991dd5dca07d7069100985badaca7f0ce82
   TSMarkdownParser: 3224ea196ecc7148fa7e03bc438f9390d4edfb6d
 
-PODFILE CHECKSUM: 9dbba1c3f502aae15ba1cf611ab51c86bb999e68
+PODFILE CHECKSUM: 43af78f1232618993b586519e9e4e1ab3148f390
 
 COCOAPODS: 1.12.0

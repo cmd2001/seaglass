@@ -163,8 +163,16 @@ class MainViewRoomsController: NSViewController, MatrixRoomsDelegate, NSTableVie
                 cell?.RoomListEntryTopic.stringValue = "\(memberString)\n\(topicString)"
                 break
             case true:
-                // let lastMessagePreview: String = state.room.summary.lastMessageEvent?.content["body"] as? String ?? ""
-                let lastMessagePreview = state.room.summary.lastMessage?.text ?? ""
+                let summary = state.room.summary
+                var lastMessagePreview = summary?.lastMessage.text ?? ""
+                if lastMessagePreview == "" {
+                    MatrixServices.inst.session.event(withEventId: summary!.lastMessage.eventId, inRoom: state.roomId,{
+                        event in
+                        if event.value!.content.contains(where: { $0.key == "body" }) {
+                            lastMessagePreview = event.value!.content["body"] as! String
+                        }
+                    })
+                }
                 cell?.RoomListEntryTopic.cell?.truncatesLastVisibleLine = true
                 cell?.RoomListEntryTopic.stringValue = lastMessagePreview
                 break

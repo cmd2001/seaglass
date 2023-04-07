@@ -93,12 +93,12 @@ class AvatarImageView: ContextImageView {
                             if let cacheUrl = forMxcUrl {
                                 MatrixServices.inst.avatarCache[cacheUrl] = image
                             }
-                            self?.layout()
+                            // self?.layout()
                         }
                     }) { [weak self] (error) in
                         guard previousPath == path else { return }
                         self?.image = defaultImage
-                        self?.layout()
+                        // self?.layout()
                     }
                 }
             }
